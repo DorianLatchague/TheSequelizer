@@ -8,7 +8,7 @@ const db = require("./models");
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use(express.static("public"));
+app.use(express.static("views"));
 // We need to use sessions to keep track of our user's login status
 app.use(session({ secret: "keeping it secret, keeping it safe", resave: true, saveUninitialized: true }));
 app.use(passport.initialize());
@@ -19,7 +19,7 @@ require("./routes/authentication.js")(app);
 require("./routes/sequelizer.js")(app);
 
 app.use(bodyParser.json())
-app.use(express.static(__dirname + '/public'));
+//app.use(express.static(__dirname + '/public'));
 
 
 // Syncing our database and logging a message to the user upon success
