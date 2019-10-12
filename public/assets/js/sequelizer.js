@@ -5,14 +5,12 @@ let fieldCount = [];
 let associationCount = [];
 $(() => {
     function fetchId(str) {
-        console.log(str);
         let arr = [];
         let i = str.length - 1;
         while (str[i] !== "/") {
             arr.push(str[i])
             i--;
         }
-        console.log(arr);
         arr.reverse();
         return arr.join("");
     }
@@ -58,7 +56,6 @@ $(() => {
                     $(`#association${currentTable}-${currentAssociation}`).append($("<option>").text(i + 1));
                 }
                 associationCount[parseInt($(this).parent().data("tablecount"))] = currentAssociation + 1;
-                console.log(associationCount);
                 removeAssociationEventListeners();
                 addAssociationListener();
             })
@@ -71,6 +68,9 @@ $(() => {
                     let table = $(`#name${i}`).val().trim();
                     if (table === "") {
                         return $("#code").html($("<code>").text(`Error (You must enter a Table Name)`));
+                    }
+                    if (!/^[a-zA-Z][a-zA-Z0-9]*$/.test(table)) {
+                        return $("#code").html($("<code>").text(`Error (Your table name "${table}" must be a variable)`));
                     }
                     if (Object.keys(tables).includes(table)) {
                         return $("#code").html($("<code>").text(`Error (Duplicate Table Name "${table}")`));
@@ -94,6 +94,9 @@ $(() => {
                         let field = $(`#field${i}-${j}`).val().trim();
                         if (field === "") {
                             return $("#code").html($("<code>").text(`Error (You must enter a Field Name)`));
+                        }
+                        if (!/^[a-zA-Z][a-zA-Z0-9]*$/.test(field)) {
+                            return $("#code").html($("<code>").text(`Error (Your field name "${field}" must be a variable)`));
                         }
                         for (let fields of tables[table].fields) {
                             if (field === fields.field) {
@@ -148,6 +151,9 @@ $(() => {
                     if (table === "") {
                         return $("#code").html($("<code>").text(`Error (You must enter a Table Name)`));
                     }
+                    if (!/^[a-zA-Z][a-zA-Z0-9]*$/.test(table)) {
+                        return $("#code").html($("<code>").text(`Error (Your table name "${table}" must be a variable)`));
+                    }
                     if (Object.keys(tables).includes(table)) {
                         return $("#code").html($("<code>").text(`Error (Duplicate Table Name "${table}")`));
                     }
@@ -171,6 +177,9 @@ $(() => {
                         if (field === "") {
                             return $("#code").html($("<code>").text(`Error (You must enter a Field Name)`));
                         }
+                        if (!/^[a-zA-Z][a-zA-Z0-9]*$/.test(field)) {
+                            return $("#code").html($("<code>").text(`Error (Your field name "${field}" must be a variable)`));
+                        }
                         for (let fields of tables[table].fields) {
                             if (field === fields.field) {
                                 return $("#code").html($("<code>").text(`Error (Duplicate Field Name "${field}") in "${table}"`));
@@ -189,7 +198,6 @@ $(() => {
                         // tables[$(`#name${association - 1}`).val()]["associations"].push(table);
                     }
                 }
-                console.log(tables);
                 $.ajax({
                     type: "POST",
                     // contentType: "application/json",
@@ -224,7 +232,6 @@ $(() => {
             addFieldListener();
             addAssociationListener();
             submitTables();
-            console.log(JSON.stringify(data));
             if (data.models.length) {
                 for (let i of data.models) {
                     $("#add-table").click();

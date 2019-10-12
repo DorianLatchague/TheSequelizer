@@ -67,26 +67,6 @@ module.exports = function(app) {
     })
     app.post("/api/sequelize/:id", isAuthenticated, (req, res) => {
         let validating = [];
-        for (let key in req.body) {
-            if (/^[a-zA-Z][a-zA-Z0-9]*$/.test(key)) {
-                validating.push(true)
-            }
-            else {
-                validating.push(false);
-            }
-            for (let i = 0; i < req.body[key].length; i++) {
-                if (/^[a-zA-Z][a-zA-Z0-9]*$/.test(req.body[key][i])) {
-                    validating.push(true);
-                }
-                else {
-                    validating.push(false);
-                }
-            }
-        }
-        if (validating.includes(false)) {
-            res.json("Error!")
-        }
-        else {
             let version = {
                 projectId: req.params.id,
                 models: []
@@ -200,6 +180,5 @@ db.Sequelize = Sequelize;
 module.exports = db;`
         req.body["Sequelize Index"] = index;
         res.json(req.body);
-        } 
     });
 }

@@ -5,3 +5,24 @@
 #register-link:hover, #login-link:hover {
     color: blueviolet;
 }
+.background {
+    background-image: url("/assets/images/equalizer.png");
+    background-size: 100%;
+    color: white;
+    min-height: 600px;
+    height: 100vh;
+}
+.container {
+    width: calc(100% - 30px);
+    padding-left: 15px;
+    padding-right: 15px;
+    min-width: 250px;
+}
+h1 {
+    margin-top: 0;
+    padding-top: 20px;
+    font-size: 50px;
+}
+body {
+    margin: 0;
+}

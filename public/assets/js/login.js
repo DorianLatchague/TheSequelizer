@@ -11,7 +11,7 @@ $(() => {
             }
         }).then(() => {
             window.location.reload();
-        })
+        }).catch(err => console.log(err))
     })
     $("#register").click(() => {
         $.ajax({
@@ -22,7 +22,9 @@ $(() => {
                 email: $("#email2").val().trim(),
                 password: $("#password2").val().trim()
             }
-        })
+        }).then(() => {
+            window.location.reload();
+        }).catch(err => console.log(err))
     })
     $("#register-link").click(() => {
         $("#register-ctn").show();
