@@ -1,0 +1,7 @@
+#register-link, #login-link {
+    cursor: pointer;
+    color: blue;
+}
+#register-link:hover, #login-link:hover {
+    color: blueviolet;
+}

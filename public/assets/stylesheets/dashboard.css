@@ -1,0 +1,14 @@
+#header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+@media (max-width: 767px) {
+    #header {
+        flex-direction: column;
+    }
+}
+.new-project {
+    display: flex;
+    width: 100%;
+}

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>API Checker</title>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
+        integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+    <script>
+        function renderJSON(data) {
+            function recData(currentData, currentLocation = [], locations = [[],[]]) {
+                if (typeof currentData !== "string") {
+                    for (let key in currentData) {
+                        currentLocation.push(key);
+                        locations[0].push([...currentLocation]);
+                        locations[1].push(currentData[key]);
+                        locations = recData(currentData[key], currentLocation, locations);
+                        currentLocation.pop();
+                    }
+                }
+                return locations;
+            }
+            locations = recData(data);
+            let table = $("<table>").append($("<thead>").append($("<tr>").append($("<th>").text("Path")).append($("<th>").text("Data"))));
+            let tbody = $("<tbody>");
+            for (let i = 0; i < locations[0].length; i++) {
+                let pathText = "data";
+                for (let j = 0; j < locations[0][i].length; j++) {
+                    if (locations[0][i][j] == parseInt(locations[0][i][j])) {
+                        pathText += "["+locations[0][i][j]+"]";
+                    }
+                    else {
+                        pathText += "['"+locations[0][i][j]+"']";
+                    }
+                }
+                let locationData;
+                switch (typeof locations[1][i]) {
+                    case "object" || "array":
+                        locationData = JSON.stringify(locations[1][i]);
+                        break;
+                    default: 
+                    locationData = locations[1][i];
+                }
+                tbody.append($("<tr>").append($("<td>").text(pathText)).append($("<td>").text(locationData)));
+            }
+            table.append(tbody);
+            return table;
+        }
+        $(() => {
+            $("#submit").click(() => {
+                $("#error-text").remove();
+                let url = $("#apiurl").val();
+                if (!/^([a-z][a-z0-9+.-]*):(?:\/\/((?:(?=((?:[a-z0-9-._~!$&'()*+,;=:]|%[0-9A-F]{2})*))(\3)@)?(?=(\[[0-9A-F:.]{2,}\]|(?:[a-z0-9-._~!$&'()*+,;=]|%[0-9A-F]{2})*))\5(?::(?=(\d*))\6)?)(\/(?=((?:[a-z0-9-._~!$&'()*+,;=:@\/]|%[0-9A-F]{2})*))\8)?|(\/?(?!\/)(?=((?:[a-z0-9-._~!$&'()*+,;=:@\/]|%[0-9A-F]{2})*))\10)?)(?:\?(?=((?:[a-z0-9-._~!$&'()*+,;=:@\/?]|%[0-9A-F]{2})*))\11)?(?:#(?=((?:[a-z0-9-._~!$&'()*+,;=:@\/?]|%[0-9A-F]{2})*))\12)?$/i.test(url)) {
+                    return $("#form-ctn").append($("<p>").attr("id","error-text").text("Please Enter a Valid URL for your API"));
+                }
+                let type = $("#request").val();
+                let counter = 0;
+                let counterInterval = setInterval(() => {
+                    counter++;
+                }, 1);
+                $.ajax({
+                    url: url,
+                    type: type
+                }).then(data => {
+                    clearInterval(counterInterval);
+                    $("#table-rows").append(
+                        $("<tr>").append(
+                            $("<td>").text(type)
+                        ).append(
+                            $("<td>").text(url)
+                        ).append(
+                            $("<td>").text(counter / 1000 + " Seconds")
+                        ).append(
+                            $("<td>").append(renderJSON(data))
+                        )
+                    )
+                }).catch(err => {
+                    $("#form-ctn").append($("<p>").attr("id","error-text").text("Something Went Wrong! Error Message: "+JSON.stringify(err)));
+                })
+            })
+        })
+    </script>
+    <style>
+        #error-text {
+            color: red;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>API Checker</h1>
+    <div id="form-ctn">
+        <label for="request">Request Type</label>
+        <select id="request">
+            <option>GET</option>
+        </select>
+        <label for="apiurl">API URL</label>
+        <input id="apiurl" type="text" name="url" placeholder="URL">
+        <button id="submit">Submit</button>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Request Type</th>
+                <th>Request URL</th>
+                <th>Speed of Request</th>
+                <th>JSON Returned</th>
+            </tr>
+        </thead>
+        <tbody id="table-rows">
+        </tbody>
+    </table>
+</body>
+
+</html>

@@ -1,0 +1,108 @@
+.container {
+    width: calc(100% - 30px);
+    padding-left: 15px;
+    padding-right: 15px;
+    min-width: 250px;
+}
+#table-container {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+.table-card {
+    margin-bottom: 20px;
+    padding: 15px;
+    border-radius: .25em;
+    border: 3px solid blueviolet;
+    background-color: white;
+    width: 40%;
+}
+@media (max-width: 767px) {
+    .table-card {
+        width: 100%;
+    }
+}
+label[for^=name] {
+    font-weight: bold;
+    font-size: 25px;
+    text-align: center;
+    margin-bottom: 10px;
+}
+input[name^=name] {
+    font-weight: bold;
+    font-size: 25px;
+    text-align: center;
+    margin-bottom: 15px;
+}
+.field-input-ctn {
+    display: flex;
+    flex-direction: row;
+}
+.field-input-ctn select{
+    width: 50%;
+}
+.field-input-ctn input{
+    width: 50%;
+}
+.field-container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+.association-container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+button {
+    margin: 10px 0;
+}
+#btn-container {
+    padding-bottom: 20px;
+}
+#code {
+    background-color: black;
+    width: 100%;
+    color: white;
+}
+code {
+    padding: 20px;
+    display: block;
+    white-space: pre;
+    border-bottom: 1px solid white;
+}
+.background {
+    background-image: url("/assets/images/equalizer.png");
+}
+h1 {
+    margin-top: 0;
+    padding-top: 20px;
+    text-align: center;
+    font-size: 50px;
+    color: white;
+}
+h2 {
+    text-align: center;
+    font-size: 30px;
+}
+body {
+    margin: 0;
+}
+a {
+    cursor: pointer;
+    color: blue;
+}
+a:hover {
+    color: blueviolet;
+}
+#header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+@media (max-width: 767px) {
+    #header {
+        flex-direction: column;
+        margin-bottom: 20px;
+    }
+}
