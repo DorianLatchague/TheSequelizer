@@ -6,14 +6,14 @@ var isAuthenticated = require("../config/middleware/isAuthenticated");
 module.exports = function(app) {
     app.get("/", (req, res) => {
         if (req.user) {
-            res.sendFile(path.resolve(__dirname,"../views/dashboard.html"));
+            res.sendFile(path.resolve(__dirname,"../public/views/dashboard.html"));
         }
         else {
-            res.sendFile(path.resolve(__dirname,"../views/login.html"));
+            res.sendFile(path.resolve(__dirname,"../public/views/login.html"));
         }
     })
     app.get("/sequelizer/:id", isAuthenticated, (req, res) => {
-        res.sendFile(path.resolve(__dirname,"../views/sequelizer.html"));
+        res.sendFile(path.resolve(__dirname,"../public/views/sequelizer.html"));
     })
     app.get("/api/sequelize/:id", isAuthenticated, (req,res) => {
         db.version.findOne({
