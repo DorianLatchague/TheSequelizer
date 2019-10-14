@@ -81,7 +81,7 @@ function fileRender(model) {
     }
     file += `
     });`
-    if (model.associations) {
+    if (model.associations.length) {
         file += `       
     ${model.name}.associate = function(models) {`
         for (let i = 0; i < model.associations.length; i++) {
