@@ -1,5 +1,3 @@
-
-let currentFiles;
 let tableCount = 0;
 let fieldCount = [];
 let associationCount = [];
@@ -18,6 +16,87 @@ $(() => {
         type: "GET",
         url: "/api/sequelize/" + fetchId(window.location.href)
     }).then(data => {
+        let index = `'use strict';
+        
+var fs        = require('fs');
+var path      = require('path');
+var Sequelize = require('sequelize');
+var basename  = path.basename(module.filename);
+var env       = process.env.NODE_ENV || 'development';
+var config    = require(__dirname + '/../config/config.json')[env];
+var db        = {};
+
+if (config.use_env_variable) {
+    var sequelize = new Sequelize(process.env[config.use_env_variable]);
+} else {
+    var sequelize = new Sequelize(config.database, config.username, config.password, config);
+}
+
+fs
+    .readdirSync(__dirname)
+    .filter(function(file) {
+        return (file.indexOf('.') !== 0) && (file !== basename) && (file.slice(-3) === '.js');
+    })
+    .forEach(function(file) {
+        var model = sequelize['import'](path.join(__dirname, file));
+        db[model.name] = model;
+    });
+
+Object.keys(db).forEach(function(modelName) {
+    if (db[modelName].associate) {
+        db[modelName].associate(db);
+    }
+});
+
+db.sequelize = sequelize;
+db.Sequelize = Sequelize;
+
+module.exports = db;`
+
+function fileRender(model) {
+    let file =
+`module.exports = function(sequelize, DataTypes) {
+    var ${model.name} = sequelize.define("${model.name}", {`
+    for (let i = 0; i < model.fields.length; i++) {
+        file +=
+`       
+        ${model.fields[i].field}: {
+            type: DataTypes.${model.fields[i].type}`
+        if (model.fields[i].allowNull === 'true') {
+            file += `,
+            allowNull: true`
+        }
+        else {
+            file += `,
+            allowNull: false`
+        }
+        if (i === model.fields.length - 1) {
+                file += `
+        }`      
+        }   
+        else {
+                file += `
+        },` 
+        }
+    }
+    file += `
+    });`
+    if (model.associations) {
+        file += `       
+    ${model.name}.associate = function(models) {`
+        for (let i = 0; i < model.associations.length; i++) {
+            file += `
+        ${model.name}.hasOne(models.${model.associations[i].associate});`
+        }
+    file += `
+    }`          
+    }
+    file +=
+`   
+    return ${model.name};
+};`
+    return file
+}
         function removeFieldEventListeners() {
             $(".add-field").unbind();
         }
@@ -60,206 +139,121 @@ $(() => {
                 addAssociationListener();
             })
         }
-        function addDownloadEventListener() {
-            $("#download").click(() => {
-                $("#code").html(null);
-                let tables = {};
-                for (let i = 0; i < fieldCount.length; i++) {
-                    let table = $(`#name${i}`).val().trim();
-                    if (table === "") {
-                        return $("#code").html($("<code>").text(`Error (You must enter a Table Name)`));
-                    }
-                    if (!/^[a-zA-Z][a-zA-Z0-9]*$/.test(table)) {
-                        return $("#code").html($("<code>").text(`Error (Your table name "${table}" must be a variable)`));
-                    }
-                    if (Object.keys(tables).includes(table)) {
-                        return $("#code").html($("<code>").text(`Error (Duplicate Table Name "${table}")`));
-                    }
-                    if (associationCount[i]) {
-                        tables[table] = {
-                            fields: [],
-                            associations: [new Array(associationCount[i])]
-                        };
-                    }
-                    else {
-                        tables[table] = {
-                            fields: [],
-                            associations: []
-                        };
-                    }
-                }
-                for (let i = 0; i < fieldCount.length; i++) {
-                    let table = $(`#name${i}`).val().trim();
-                    for (let j = 1; j < fieldCount[i] + 1; j++) {
-                        let field = $(`#field${i}-${j}`).val().trim();
-                        if (field === "") {
-                            return $("#code").html($("<code>").text(`Error (You must enter a Field Name)`));
-                        }
-                        if (!/^[a-zA-Z][a-zA-Z0-9]*$/.test(field)) {
-                            return $("#code").html($("<code>").text(`Error (Your field name "${field}" must be a variable)`));
-                        }
-                        for (let fields of tables[table].fields) {
-                            if (field === fields.field) {
-                                return $("#code").html($("<code>").text(`Error (Duplicate Field Name "${field}") in "${table}"`));
-                            }
-                        }
-                        let fieldType = $(`#fieldtype${i}-${j}`).val().trim();
-                        let allowNull = $(`#allownull${i}-${j}`).prop("checked") == true;
-                        tables[table].fields[j - 1] = { field: field, type: fieldType, allowNull: allowNull };
-                    }
-                    for (let j = 0; j < associationCount[i]; j++) {
-                        let association = parseInt($(`#association${i}-${j}`).val());
-                        if (association == NaN) {
-                            return $("#code").html($("<code>").text(`Error (Your association must point at a table number)`));
-                        }
-                        tables[table]["associations"][j] = $(`#name${association - 1}`).val();
-                        // tables[$(`#name${association - 1}`).val()]["associations"].push(table);
-                    }
-                }
-                $.ajax({
-                    type: "POST",
-                    // contentType: "application/json",
-                    url: "/api/sequelize/" + data.project.id,
-                    data: tables
-                }).then(data => {
-                    let zip = new JSZip()
-                    let folder = zip.folder("models");
-                    folder.file("index.js", currentFiles["Sequelize Index"]);
-                    for (let key in currentFiles) {
-                        if (key != "Sequelize Index") {
-                            folder.file(key + ".js", currentFiles[key]);
-                        }
-                    }
-                    zip.generateAsync({ type: "blob" })
-                        .then(function (content) {
-                            var link = document.createElement('a');
-                            link.href = window.URL.createObjectURL(content);
-                            var fileName = "models.zip";
-                            link.download = fileName;
-                            link.click();
-                        })
-                        .catch(err => console.log(err));
-                }).catch(err => console.log(err));
-            })
-        }
-        function submitTables() {
-            $("#submit-tables").click(function () {
-                $("#code").html(null);
-                let tables = {};
-                for (let i = 0; i < fieldCount.length; i++) {
-                    let table = $(`#name${i}`).val().trim();
-                    if (table === "") {
-                        return $("#code").html($("<code>").text(`Error (You must enter a Table Name)`));
-                    }
-                    if (!/^[a-zA-Z][a-zA-Z0-9]*$/.test(table)) {
-                        return $("#code").html($("<code>").text(`Error (Your table name "${table}" must be a variable)`));
-                    }
-                    if (Object.keys(tables).includes(table)) {
-                        return $("#code").html($("<code>").text(`Error (Duplicate Table Name "${table}")`));
-                    }
-                    if (associationCount[i]) {
-                        tables[table] = {
-                            fields: [],
-                            associations: [new Array(associationCount[i])]
-                        };
-                    }
-                    else {
-                        tables[table] = {
-                            fields: [],
-                            associations: []
-                        };
-                    }
-                }
-                for (let i = 0; i < fieldCount.length; i++) {
-                    let table = $(`#name${i}`).val().trim();
-                    for (let j = 1; j < fieldCount[i] + 1; j++) {
-                        let field = $(`#field${i}-${j}`).val().trim();
-                        if (field === "") {
-                            return $("#code").html($("<code>").text(`Error (You must enter a Field Name)`));
-                        }
-                        if (!/^[a-zA-Z][a-zA-Z0-9]*$/.test(field)) {
-                            return $("#code").html($("<code>").text(`Error (Your field name "${field}" must be a variable)`));
-                        }
-                        for (let fields of tables[table].fields) {
-                            if (field === fields.field) {
-                                return $("#code").html($("<code>").text(`Error (Duplicate Field Name "${field}") in "${table}"`));
-                            }
-                        }
-                        let fieldType = $(`#fieldtype${i}-${j}`).val().trim();
-                        let allowNull = $(`#allownull${i}-${j}`).prop("checked") == true;
-                        tables[table]["fields"][j - 1] = { field: field, type: fieldType, allowNull: allowNull };
-                    }
-                    for (let j = 0; j < associationCount[i]; j++) {
-                        let association = parseInt($(`#association${i}-${j}`).val());
-                        if (association == NaN) {
-                            return $("#code").html($("<code>").text(`Error (Your association must point at a table number)`));
-                        }
-                        tables[table]["associations"][j] = $(`#name${association - 1}`).val();
-                        // tables[$(`#name${association - 1}`).val()]["associations"].push(table);
-                    }
-                }
-                $.ajax({
-                    type: "POST",
-                    // contentType: "application/json",
-                    url: "/api/sequelize/" + data.project.id,
-                    data: tables
-                }).then(
-                    data => {
-                        if (!currentFiles) {
-                            currentFiles = data;
-                            $("#btn-container").append($("<button>").attr("id", "download").text("Download Models Folder"));
-                            addDownloadEventListener();
-                        }
-                        else {
-                            currentFiles = data;
-                        }
-                        $("#code").html(null);
-                        $("#code").append($("<code>").text("index.js:\n\n\n" + data["Sequelize Index"]));
-                        for (let key in data) {
-                            if (key != "Sequelize Index") {
-                                $("#code").append($("<code>").text(key + ".js:\n\n\n" + data[key]));
-                            }
-                        }
-                    })
-                    .catch(err => console.log(err));
-            })
-        }
         if ("error" in data) {
             window.location = "/";
         }
-        else {
-            addTableListener();
-            addFieldListener();
-            addAssociationListener();
-            submitTables();
-            if (data.models.length) {
-                for (let i of data.models) {
-                    $("#add-table").click();
-                    $(`#name${tableCount - 1}`).val(i.name)
-                    for (let j = 1; j < i.fields.length + 1; j++) {
-                        $(`#name${tableCount - 1}`).parent().parent().children(".add-field").click();
-                        $(`#field${tableCount - 1}-${j}`).val(i.fields[j-1].field);
-                        $(`#fieldtype${tableCount - 1}-${j}`).val(i.fields[j-1].type);
-                        $(`#allownull${tableCount - 1}-${j}`).prop( "checked", i.fields[j-1].allowNull )
-                    }
+        addTableListener();
+        addFieldListener();
+        addAssociationListener();
+        // Sequelize Listener
+        $("#submit-tables").click(function () {
+            $("#code").html(null);
+            let tables = {
+                models: []
+            };
+            for (let i = 0; i < fieldCount.length; i++) {
+                let model = {
+                    name: $(`#name${i}`).val().trim(),
+                    associations: [],
+                    fields: []
+                };
+                for (let j = 1; j < fieldCount[i] + 1; j++) {
+                    model.fields.push({ field: $(`#field${i}-${j}`).val().trim(), type: $(`#fieldtype${i}-${j}`).val().trim(), allowNull: $(`#allownull${i}-${j}`).prop("checked") == true });
                 }
-                newTableCount = 0;
-                for (let i of data.models) {
-                    for (let j = 0; j < i.associations.length; j++) {
-                        $(`#name${newTableCount}`).parent().parent().children(".add-association").click();
-                        for (let z = 0; z < tableCount; z++) {
-                            if ($(`#name${z}`).val() === i.associations[j].associate) {
-                                $(`#association${newTableCount}-${j}`).val(z+1);
-                                break;
-                            }
-                        }
-                    }
-                    newTableCount ++;
+                for (let j = 0; j < associationCount[i]; j++) {
+                    model.associations.push({ associate: $(`#name${parseInt($(`#association${i}-${j}`).val()) - 1}`).val() });
                 }
-                $("#submit-tables").click();
-            } else {
+                tables.models.push(model)
+            }
+            $.ajax({
+                type: "POST",
+                url: "/api/sequelize/" + data.project.id,
+                data: tables
+            }).then(
+                data => {
+                    $("#code").html(null);
+                    $("#code").append($("<code>").text("index.js:\n\n\n"+index));
+                    for (let model of data.models) {
+                        $("#code").append($("<code>").text(model.name + ".js:\n\n\n" + fileRender(model)));
+                    }
+                })
+                .catch(err => console.log(err));
+        })
+        // Download Listener
+        $("#download").click(() => {
+            $("#code").html(null);
+            let tables = {
+                models: []
+            };
+            for (let i = 0; i < fieldCount.length; i++) {
+                let model = {
+                    name: $(`#name${i}`).val().trim(),
+                    associations: [],
+                    fields: []
+                };
+                for (let j = 1; j < fieldCount[i] + 1; j++) {
+                    model.fields.push({ field: $(`#field${i}-${j}`).val().trim(), type: $(`#fieldtype${i}-${j}`).val().trim(), allowNull: $(`#allownull${i}-${j}`).prop("checked") == true });
+                }
+                for (let j = 0; j < associationCount[i]; j++) {
+                    model.associations.push({ associate: $(`#name${parseInt($(`#association${i}-${j}`).val()) - 1}`).val() });
+                }
+                tables.models.push(model)
+            }
+            $.ajax({
+                type: "POST",
+                url: "/api/sequelize/" + data.project.id,
+                data: tables
+            }).then(data => {
+                $("#code").html(null);
+                $("#code").append($("<code>").text("index.js:\n\n\n"+index));
+                for (let model of data.models) {
+                    $("#code").append($("<code>").text(model.name + ".js:\n\n\n" + fileRender(model)));
+                }
+                let zip = new JSZip()
+                let folder = zip.folder("models");
+                folder.file("index.js", index);
+                for (let model of tables.models) {
+                    folder.file(model.name + ".js", fileRender(model));
+                }
+                zip.generateAsync({ type: "blob" })
+                    .then(function (content) {
+                        var link = document.createElement('a');
+                        link.href = window.URL.createObjectURL(content);
+                        var fileName = "models.zip";
+                        link.download = fileName;
+                        link.click();
+                    })
+                    .catch(err => console.log(err));
+            }).catch(err => console.log(err));
+        })
+        if (data.models.length) {
+            for (let i = 0; i < data.models.length; i++) {
                 $("#add-table").click();
             }
+            for (let [index,value] of data.models.entries()) {
+                $(`#name${index}`).val(value.name)
+                for (let j = 1; j < value.fields.length + 1; j++) {
+                    $(`#name${index}`).parent().parent().children(".add-field").click();
+                    $(`#field${index}-${j}`).val(value.fields[j-1].field);
+                    $(`#fieldtype${index}-${j}`).val(value.fields[j-1].type);
+                    $(`#allownull${index}-${j}`).prop( "checked", value.fields[j-1].allowNull )
+                }
+                for (let j = 0; j < value.associations.length; j++) {
+                    $(`#name${index}`).parent().parent().children(".add-association").click();
+                    for (let z = 0; z < data.models.length; z++) {
+                        if ($(`#name${z}`).val() === value.associations[j].associate) {
+                            $(`#association${z}-${j}`).val(z+1);
+                            break;
+                        }
+                    }
+                }
+            }
+            $("#code").append($("<code>").text("index.js:\n\n\n"+index));
+            for (let model of data.models) {
+                $("#code").append($("<code>").text(model.name + ".js:\n\n\n" + fileRender(model)));
+            }
+        } else {
+            $("#add-table").click();
         }
     }).catch(err => console.log(err));
 })
